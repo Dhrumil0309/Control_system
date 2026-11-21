@@ -151,7 +151,7 @@ text(Wcp_comp * 1.3, -130, sprintf('Phase Margin Boost:\n%.2f° \\rightarrow %.1
 
 xlabel('Frequency (rad/s)', 'FontSize', 11, 'FontWeight', 'bold');
 ylabel('Phase (degrees)', 'FontSize', 11, 'FontWeight', 'bold');
-legend('Location', 'lower left', 'FontSize', 10);
+legend('Location', 'southwest', 'FontSize', 10);
 xlim([0.01, 300]);
 ylim([-195, -80]);
 
