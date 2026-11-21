@@ -8,7 +8,7 @@
 %        - Settling Time (5%): Ts < 5 s  (requires real pole part sigma >= 0.6 s^-1)
 %   3. Frequency-domain verification via comparative Bode plots of:
 %        - Uncompensated plant: G(s)
-%        - Compensated loop:    L(s) = C(s) * G(s)
+%        - Compensated loop:    L(s) = series(C(s), G(s))
 %   4. Time-domain step response verification demonstrating meeting of all design criteria.
 %   5. Root Locus analysis of compensated loop with design spec boundaries.
 %   6. Discrete-time controller C(z) derivation via Tustin (bilinear) at Ts = 0.02 s (50 Hz),
@@ -37,7 +37,7 @@ G.InputUnit  = 'deg';
 G.OutputName = 'Distance (\Delta y)';
 G.OutputUnit = 'cm';
 
-% Output folder for saving figures
+% Output folder for saving figures (robust to full run or section run)
 outputDir = fileparts(mfilename('fullpath'));
 if isempty(outputDir), outputDir = pwd; end
 
@@ -87,8 +87,10 @@ C = Kc * (s + zc) / (s + pc);
 C.InputName  = 'Position Error e(t)';
 C.OutputName = 'Servo Angle (\Delta\theta)';
 
-% Compensated Open-Loop Transfer Function: L(s) = C(s) * G(s)
-L = C * G;
+% Compensated Open-Loop Transfer Function: L(s) = series(C, G)
+% Using series(C, G) correctly matches the signal flow:
+% Error e(t) -> C(s) -> Servo Angle -> G(s) -> Distance y(t)
+L = series(C, G);
 
 fprintf('>>> 2. DESIGNED CONTINUOUS-TIME LEAD COMPENSATOR C(s) <<<\n');
 fprintf('           s + %.4f\n', zc);
@@ -165,7 +167,7 @@ t_step = linspace(0, 10, 1000);
 [y_uncomp, t_out1] = step(T_uncomp, t_step);
 [y_comp,   t_out2] = step(T_comp,   t_step);
 
-% Metrics calculation:
+% Metrics calculation (using 5% settling threshold per project specs):
 info_uncomp = stepinfo(T_uncomp, 'SettlingTimeThreshold', 0.05);
 info_comp   = stepinfo(T_comp,   'SettlingTimeThreshold', 0.05);
 
@@ -174,13 +176,17 @@ ts_uncomp = info_uncomp.SettlingTime;
 os_comp   = info_comp.Overshoot;
 ts_comp   = info_comp.SettlingTime;
 
+% Status strings without depending on external helper functions (safe for cell run)
+if os_comp < 5.0, status_os = 'PASSED [OK]'; else, status_os = 'FAILED'; end
+if ts_comp < 5.0, status_ts = 'PASSED [OK]'; else, status_ts = 'FAILED'; end
+
 fprintf('>>> 4. CLOSED-LOOP TIME-DOMAIN PERFORMANCE VERIFICATION <<<\n');
 fprintf('Metric                    Design Spec    Uncompensated    Compensated    Status\n');
 fprintf('--------------------------------------------------------------------------------\n');
 fprintf('Percent Overshoot (OS):   < 5.0 %%        %6.2f %%         %6.2f %%        %s\n', ...
-    os_uncomp, os_comp, ternary(os_comp < 5.0, 'PASSED [OK]', 'FAILED'));
+    os_uncomp, os_comp, status_os);
 fprintf('Settling Time (5%% band):  < 5.0 s        %6.2f s         %6.2f s        %s\n', ...
-    ts_uncomp, ts_comp, ternary(ts_comp < 5.0, 'PASSED [OK]', 'FAILED'));
+    ts_uncomp, ts_comp, status_ts);
 fprintf('Rise Time (10%% to 90%%):   --             %6.2f s         %6.2f s        FAST\n', ...
     info_uncomp.RiseTime, info_comp.RiseTime);
 fprintf('Steady-State Error (ess): 0.0 cm         0.00 cm          0.00 cm        ZERO ERROR\n');
@@ -303,7 +309,3 @@ fprintf('Discrete C(z):  (%.6f z - %.6f) / (z - %.6f)\n', b0, -b1, -a1);
 fprintf('=======================================================================\n');
 fprintf('All Task 7 verification figures saved to: %s\n', outputDir);
 fprintf('=======================================================================\n');
-
-function str = ternary(cond, trueStr, falseStr)
-    if cond, str = trueStr; else, str = falseStr; end
-end

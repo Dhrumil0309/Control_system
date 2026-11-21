@@ -35,9 +35,7 @@ b_plant = 0.0170;   % Track friction coefficient (s^-1)
 s = tf('s');
 G = K_plant / (s * (s + b_plant));
 G.InputName  = 'Servo Angle (\Delta\theta)';
-G.InputUnit  = 'deg';
 G.OutputName = 'Distance (\Delta y)';
-G.OutputUnit = 'cm';
 
 % Output folder for saving figures
 outputDir = fileparts(mfilename('fullpath'));
@@ -55,8 +53,8 @@ fprintf('         s ( s + %.4f )\n\n', b_plant);
 fprintf('>>> 6.1 ROOT LOCUS AND NYQUIST ANALYSIS <<<\n');
 fprintf('Open-Loop Poles: s1 = 0.0000,  s2 = -%.4f rad/s\n', b_plant);
 sigma_breakaway = -b_plant / 2;
-fprintf('Breakaway Point: sigma_b = -b/2 = -%.4f rad/s\n', sigma_breakaway);
-fprintf('Asymptote Angles: phi = +-90 deg along vertical line Re(s) = -%.4f\n\n', sigma_breakaway);
+fprintf('Breakaway Point: sigma_b = -b/2 = %.4f rad/s\n', sigma_breakaway);
+fprintf('Asymptote Angles: phi = +-90 deg along vertical line Re(s) = %.4f\n\n', sigma_breakaway);
 
 figure('Name', 'Task 6.1: Root Locus Analysis', 'Color', 'w', 'Position', [100, 100, 850, 650]);
 rlocus(G);
@@ -74,7 +72,7 @@ xline(-0.6, '--', 'Color', [0 0.5 0], 'LineWidth', 1.8, ...
 
 % Mark open-loop poles and breakaway point
 plot([0, -b_plant], [0, 0], 'rx', 'MarkerSize', 10, 'LineWidth', 2.5, 'DisplayName', 'Open-Loop Poles');
-plot(sigma_breakaway, 0, 'mo', 'MarkerSize', 8, 'LineWidth', 2, 'DisplayName', sprintf('Breakaway (\\sigma = -%.4f)', sigma_breakaway));
+plot(sigma_breakaway, 0, 'mo', 'MarkerSize', 8, 'LineWidth', 2, 'DisplayName', sprintf('Breakaway (\\sigma = %.4f)', sigma_breakaway));
 
 xlim([-1.5, 0.4]);
 ylim([-2.0, 2.0]);
@@ -107,10 +105,10 @@ plot(-1, 0, 'r+', 'MarkerSize', 14, 'LineWidth', 2.5, 'DisplayName', 'Critical P
 % Find crossover frequency point on Nyquist contour
 [~, Pm_val, ~, Wcp_val] = margin(G);
 [mag_cp, phase_cp] = bode(G, Wcp_val);
-re_cp = mag_cp * cosd(phase_cp);
-im_cp = mag_cp * sind(phase_cp);
+re_cp = squeeze(mag_cp) * cosd(squeeze(phase_cp));
+im_cp = squeeze(mag_cp) * sind(squeeze(phase_cp));
 plot(re_cp, im_cp, 'mo', 'MarkerSize', 7, 'LineWidth', 2, 'DisplayName', sprintf('\\omega_{cp} = %.4f rad/s', Wcp_val));
-plot([-1, re_cp], [0, im_cp], 'r-', 'LineWidth', 1.5, 'DisplayName', 'Proximity Distance = 0.021');
+plot([-1, re_cp], [0, im_cp], 'r-', 'LineWidth', 1.5, 'DisplayName', 'Proximity Distance');
 
 xlim([-1.3, -0.7]);
 ylim([-0.3, 0.3]);
